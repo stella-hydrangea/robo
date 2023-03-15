@@ -37,16 +37,20 @@ int strength, i, j, check, pos, min=300, range=50, null_counter=0;
 float distance;
 
 void setup() {
-  servo1.attach(motor_pin);
+  //servo1.attach(motor_pin);
   Serial.begin(9600);             //set bit rate of serial port connecting Arduino with computer
   SerialLaser.begin(115200);      //set bit rate of serial port connecting LiDAR with Arduino
-  pinMode (driverPUL, OUTPUT);
-  pinMode (driverDIR, OUTPUT);
+  pinMode (driverPUL, OUTPUT);    //set stepper PUL pin
+  pinMode (driverDIR, OUTPUT);    //set stepper DIR pin
 }
+
+void scanning(){}
+
+void
 
 void loop() {
 
-  
+  // non-block delay
   //currentMills = millis();
   // if (currentMills - previousMills >= 500){
   //   previousMills = currentMills;
@@ -56,7 +60,6 @@ void loop() {
     delayMicroseconds(pd);
     digitalWrite(driverPUL,LOW);
     delayMicroseconds(pd);
-    //servo1.attach(motor_pin);
     for (pos = 0; pos <= range; pos += 1) {           // scanning, 180 degree
       while (!success){
         // read laser distance data
@@ -87,7 +90,7 @@ void loop() {
             }
           }
         }
-        if (null_counter==5){
+        if (null_counter==5){   //cannot recieve data for 5 times, insert 300cm as distance
           distance=300;
           dist[index] = distance;
           strn[index] = strength;
@@ -105,16 +108,13 @@ void loop() {
       //servo1.write(pos);
       //delay(100);
     }
-
-  // for (pos = 50; pos >= 0; pos -= 1) {           // goes from 100 degrees to 0 degrees
-  //     servo1.write(pos);
-  // }
   
+  // find starting point for detecting curve
   int count_min=0, starting=0, temp;
   bool multi=false;
   for (i=0; i<range; i++) {
     if (dist[i]==min) {
-      if(dist[i-1]==dist[i] && count_min>1){
+      if(dist[i-1]==dist[i] && count_min>1) {
         count_min++;
         multi=true;
         temp=i;     
@@ -128,6 +128,7 @@ void loop() {
   Serial.println(count_min);  
   if (multi) starting = (temp-count_min/2);
   
+  // curve detection
   int L=starting, R=starting, edgeL=-1, edgeR=-1, diff_left, diff_right, same_left=0, same_right=0;
   while (L>=0 || R<=range-1){
     if (L==0) edgeL=L;
