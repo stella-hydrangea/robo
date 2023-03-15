@@ -1,6 +1,6 @@
 /*
-servo turn and scan for 180
-while laser recieve and compare distance to find min
+servo turn and scan for 100
+search for shortest point and check for curve
 return degree needed to turn from facing angle of the launcher
 */
 #include <Arduino.h>
@@ -16,25 +16,22 @@ int uart[9];                      // data measured by LiDAR
 // servo
 int driverPUL = 6;    // PUL- pin
 int driverDIR = 7;    // DIR- pin
-int spd = A0;     // Potentiometer
-int pd = 3000;       // Pulse Delay period
+int spd = A0;         // Potentiometer
+int pd = 3000;        // Pulse Delay period
 boolean setdir = LOW; // Set Direction
 AccelStepper stepper = AccelStepper(1, driverPUL, driverDIR);
 
 int motor_pin = 9;
-bool scannfing_state = true;
+// del? bool scanning_state = true;
 
-//data arrays
+//global variables
 int dist[50];//distance
 int strn[50]; //strength
 int angl[50]; //angle
 int index = 0; //current index
-unsigned long currentMills = millis();
-unsigned long previousMills;
-
-bool success = false;  
-int strength, i, j, check, pos, min=300, range=50, null_counter=0;
-float distance;
+// unsigned long currentMills = millis();
+// unsigned long previousMills;
+int i, j, min=300, range=50;
 
 void setup() {
   //servo1.attach(motor_pin);
@@ -46,15 +43,17 @@ void setup() {
 
 void scanning(){}
 
-void
-
 void loop() {
-
+  
+    int pos, check, strength, null_counter=0;
+    float distance;
+    bool success = false;
+  
   // non-block delay
   //currentMills = millis();
   // if (currentMills - previousMills >= 500){
   //   previousMills = currentMills;
-    
+  
     digitalWrite(driverDIR,setdir);
     digitalWrite(driverPUL,HIGH);
     delayMicroseconds(pd);
@@ -109,7 +108,7 @@ void loop() {
       //delay(100);
     }
   
-  // find starting point for detecting curve
+  // find starting point for detecting curve, starting = mid-point of curve/pole
   int count_min=0, starting=0, temp;
   bool multi=false;
   for (i=0; i<range; i++) {
@@ -127,16 +126,22 @@ void loop() {
   }
   Serial.println(count_min);  
   if (multi) starting = (temp-count_min/2);
-  
-  // curve detection
+ 
+ 
+// curve detection by comparing difference of dist[i] and dist[i-1](left) or dist[i+1](right)
+// input: starting, dist[]
+// output: printf(starting angle, starting dist, edgeL, edgeR)
+
+bool isCurver(int starting, int *edgeL, int *edgeR){}
+
   int L=starting, R=starting, edgeL=-1, edgeR=-1, diff_left, diff_right, same_left=0, same_right=0;
-  while (L>=0 || R<=range-1){
+  while (L>=0 || R<=range-1){ 
     if (L==0) edgeL=L;
     else if (starting-L-1 > 5) edgeL=L;
     if (R==range-1) edgeR=R;
     else if (R+1-starting > 5) edgeR=R;
 
-    // do if 
+    // do when either edgeL or edgeR not found yet
     if (edgeL==-1 || edgeR ==-1){
 
       diff_left = dist[L-1]-dist[L];
@@ -171,11 +176,17 @@ void loop() {
         Serial.print("edgeR is set by many continous same value ");
         Serial.println(dist[edgeR], edgeR);
       }
+      
+      // when diff is -ve, skip and continue
+      // possible situation: overlaying poles
+      
       if (edgeL==-1) L=L-1;
       if (edgeR==-1) R=R+1;
     }
     if (edgeL!=-1 && edgeR!=-1) break;    
   }
+  
+  // result
   Serial.println("edgeL : "+String(edgeL)+" edgeR : "+String(edgeR));
   Serial.println("distance : "+String(dist[starting])+" angle : "+String(starting));
   
