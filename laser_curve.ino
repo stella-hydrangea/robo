@@ -187,8 +187,11 @@ bool isCurver(int starting, int *edgeL, int *edgeR){}
   }
   
   // result
-  Serial.println("edgeL : "+String(edgeL)+" edgeR : "+String(edgeR));
-  Serial.println("distance : "+String(dist[starting])+" angle : "+String(starting));
+  if(edgeR-edgeL<3) Serial.println("pole width <3");
+  else{
+    Serial.println("edgeL : "+String(edgeL)+" edgeR : "+String(edgeR));
+    Serial.println("distance : "+String(dist[starting])+" angle : "+String(starting));
+  }
   
   Serial.print("\n\nLoop ended\n\n");
   stepper.setCurrentPosition(pos*111);
